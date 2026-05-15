@@ -2,8 +2,6 @@
 
 A glassmorphism-style calculator inspired by macOS Monterey's Calculator app with both **Basic** and **Scientific** modes.
 
-![Calculator Screenshot](screenshot.svg)
-
 <div align="center">
   <img src="screenshot.svg" alt="Basic Mode" width="45%"/>
   <img src="screenshot_sci.svg" alt="Scientific Mode" width="45%"/>
