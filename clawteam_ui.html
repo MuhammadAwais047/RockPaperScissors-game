@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClawTeam Visualizer</title>
+<style>
+  /* ── Base ─────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'Segoe UI', monospace;
+    background: #0a0e14;
+    color: #b3b1ad;
+    min-height: 100vh;
+  }
+
+  /* ── Header ───────────────────────────────────────── */
+  header {
+    padding: 18px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #1a1e26;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #ff6b6b, #ffa94d);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: #0a0e14;
+  }
+  .logo-text {
+    font-size: 20px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #ff6b6b, #ffa94d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .logo-sub { font-size: 12px; color: #5c6370; margin-top: -2px; }
+
+  .header-controls { display: flex; gap: 8px; }
+
+  .btn {
+    padding: 8px 20px;
+    border: 1px solid #2c323c;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+  }
+  .btn-run {
+    background: #e05f4a;
+    color: #fff;
+    border-color: #e05f4a;
+  }
+  .btn-run:hover { background: #d64f38; }
+  .btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-clear {
+    background: transparent;
+    color: #5c6370;
+  }
+  .btn-clear:hover { background: #1a1e26; color: #b3b1ad; }
+
+  /* ── Bridge Badge ─────────────────────────────────── */
+  .bridge-badge {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .bridge-badge.real {
+    color: #7ecb6b;
+    border-color: #7ecb6b44;
+    background: #142614;
+  }
+  .bridge-badge.cli {
+    color: #ffa94d;
+    border-color: #ffa94d44;
+    background: #2c1f0a;
+  }
+  .bridge-badge.mock {
+    color: #5c6370;
+    border-color: #1a1e26;
+    background: #12161e;
+  }
+
+  /* ── Main Layout ──────────────────────────────────── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    grid-template-rows: auto 1fr;
+    gap: 0;
+    height: calc(100vh - 70px);
+  }
+
+  /* ── Leader Bar ───────────────────────────────────── */
+  .leader-bar {
+    grid-column: 1 / -1;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #0d1117;
+    border-bottom: 1px solid #1a1e26;
+    min-height: 56px;
+  }
+  .leader-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #e05f4a, #ffa94d);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .leader-info { flex: 1; min-width: 0; }
+  .leader-name { font-weight: 700; color: #e6e1cf; font-size: 14px; }
+  .leader-desc { font-size: 12px; color: #5c6370; }
+  .leader-goal {
+    flex: 2;
+    background: #12161e;
+    border: 1px solid #1a1e26;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: #e6e1cf;
+    min-width: 200px;
+  }
+  .leader-status {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .ls-idle { color: #5c6370; background: #12161e; }
+  .ls-working { color: #ffa94d; background: #2c1f0a; animation: pulse-leader 1.5s ease infinite; }
+  .ls-done { color: #7ecb6b; background: #142614; }
+
+  @keyframes pulse-leader {
+    0%, 100% { box-shadow: 0 0 4px rgba(255, 169, 77, 0.2); }
+    50% { box-shadow: 0 0 16px rgba(255, 169, 77, 0.4); }
+  }
+
+  /* ── Agents Grid (tmux panes) ─────────────────────── */
+  .agents-grid {
+    padding: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    overflow-y: auto;
+    background: #0a0e14;
+  }
+
+  .tmux-pane {
+    background: #0d1117;
+    border: 1px solid #1a1e26;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  .tmux-pane.active {
+    border-color: #ffa94d66;
+    box-shadow: 0 0 16px rgba(255, 169, 77, 0.15);
+  }
+  .tmux-pane.done { border-color: #7ecb6b44; opacity: 0.85; }
+  .tmux-pane.pending { opacity: 0.5; }
+
+  .pane-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #12161e;
+    border-bottom: 1px solid #1a1e26;
+    font-size: 12px;
+  }
+  .pane-header .pane-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .pane-header .pane-title {
+    font-weight: 600;
+    color: #e6e1cf;
+    flex: 1;
+  }
+  .pane-header .pane-id {
+    color: #5c6370;
+    font-size: 11px;
+  }
+  .pane-header .pane-status-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .badge-spawning { background: #2c1f0a; color: #ffa94d; }
+  .badge-working { background: #1a2b4a; color: #6cb6ff; }
+  .badge-done { background: #142614; color: #7ecb6b; }
+  .badge-idle { background: #1a1e26; color: #5c6370; }
+
+  .pane-body {
+    padding: 10px 12px;
+    font-size: 12px;
+    line-height: 1.6;
+    min-height: 80px;
+  }
+  .pane-body .pane-label {
+    color: #5c6370;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .pane-body .pane-value {
+    color: #b3b1ad;
+    margin-bottom: 6px;
+  }
+  .pane-body .pane-value.highlight {
+    color: #ffa94d;
+  }
+  .pane-body .pane-value.success {
+    color: #7ecb6b;
+  }
+  .pane-body .pane-progress {
+    display: flex;
+    gap: 4px;
+    margin: 6px 0;
+  }
+  .pane-progress .bar {
+    height: 4px;
+    border-radius: 2px;
+    flex: 1;
+    background: #1a1e26;
+    transition: background 0.3s ease;
+  }
+  .pane-progress .bar.filled { background: #6cb6ff; }
+  .pane-progress .bar.filled.green { background: #7ecb6b; }
+  .pane-progress .bar.filled.orange { background: #ffa94d; }
+
+  /* ── Inbox Sidebar ────────────────────────────────── */
+  .inbox-panel {
+    background: #0d1117;
+    border-left: 1px solid #1a1e26;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .inbox-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #1a1e26;
+    font-size: 13px;
+    font-weight: 600;
+    color: #5c6370;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .inbox-header .count { color: #e05f4a; font-weight: 700; }
+
+  .inbox-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 12px;
+  }
+  .inbox-messages::-webkit-scrollbar { width: 4px; }
+  .inbox-messages::-webkit-scrollbar-thumb { background: #1a1e26; border-radius: 2px; }
+
+  .inbox-msg {
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    background: #12161e;
+    border: 1px solid #1a1e26;
+    border-radius: 6px;
+    font-size: 12px;
+    opacity: 0;
+    animation: msg-in 0.3s ease forwards;
+  }
+  @keyframes msg-in {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .inbox-msg .msg-from {
+    font-weight: 700;
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+  .inbox-msg .msg-text { color: #b3b1ad; line-height: 1.4; }
+  .inbox-msg .msg-time {
+    font-size: 10px;
+    color: #5c6370;
+    text-align: right;
+    margin-top: 4px;
+  }
+
+  .msg-color-coder .msg-from { color: #6cb6ff; }
+  .msg-color-reviewer .msg-from { color: #7ecb6b; }
+  .msg-color-tester .msg-from { color: #e05f4a; }
+  .msg-color-architect .msg-from { color: #d2a6ff; }
+  .msg-color-leader .msg-from { color: #ffa94d; }
+  .msg-color-system .msg-from { color: #ffa94d; }
+
+  /* ── Terminal Log ─────────────────────────────────── */
+  .terminal-log {
+    background: #05080e;
+    border-top: 1px solid #1a1e26;
+    height: 200px;
+    overflow-y: auto;
+    padding: 10px 16px;
+    font-size: 12px;
+    line-height: 1.5;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    grid-column: 1 / -1;
+  }
+  .terminal-log::-webkit-scrollbar { width: 4px; }
+  .terminal-log::-webkit-scrollbar-thumb { background: #1a1e26; border-radius: 2px; }
+
+  .log-line {
+    opacity: 0;
+    animation: term-in 0.2s ease forwards;
+    white-space: pre-wrap;
+    word-break: break-all;
+    padding: 1px 0;
+  }
+  @keyframes term-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .log-line .ts { color: #484f58; }
+  .log-line.info { color: #5c6370; }
+  .log-line.cmd { color: #6cb6ff; }
+  .log-line.ok { color: #7ecb6b; }
+  .log-line.warn { color: #ffa94d; }
+  .log-line.err { color: #e05f4a; }
+  .log-line.highlight { color: #d2a6ff; font-weight: 600; }
+
+  .terminal-empty {
+    text-align: center;
+    padding: 30px;
+    color: #484f58;
+    font-size: 13px;
+  }
+
+  /* ── Empty / Loading states ───────────────────────── */
+  .agents-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: #484f58;
+  }
+  .agents-empty .emoji { font-size: 36px; margin-bottom: 10px; }
+
+  /* ── Responsive ───────────────────────────────────── */
+  @media (max-width: 800px) {
+    .main-grid {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto 200px 200px;
+      height: auto;
+    }
+    .agents-grid { grid-template-columns: 1fr; }
+    .inbox-panel { border-left: none; border-top: 1px solid #1a1e26; }
+    .leader-goal { flex: 1; min-width: 100px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ────────────────────────────────────────── -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">C</div>
+    <div>
+      <div class="logo-text">ClawTeam</div>
+      <div class="logo-sub">Agent Swarm Intelligence</div>
+    </div>
+  </div>
+  <div class="header-controls">
+    <span class="bridge-badge mock" id="bridgeBadge">🔌 SIMULATED</span>
+    <button class="btn btn-run" id="runBtn" onclick="runDemo()">▶ Run Swarm</button>
+    <button class="btn btn-clear" onclick="resetAll()">Reset</button>
+  </div>
+</header>
+
+<!-- ── Leader Bar ────────────────────────────────────── -->
+<div class="leader-bar">
+  <div class="leader-icon">🧠</div>
+  <div class="leader-info">
+    <div class="leader-name">Leader Agent</div>
+    <div class="leader-desc" id="leaderDesc">Analyzes goals, spawns agents, monitors progress</div>
+  </div>
+  <div class="leader-goal" id="leaderGoal">⏳ Click "Run Swarm" to start...</div>
+  <div class="leader-status ls-idle" id="leaderStatus">Idle</div>
+</div>
+
+<!-- ── Main Grid ─────────────────────────────────────── -->
+<div class="main-grid" id="mainGrid">
+
+  <!-- Agent Panes -->
+  <div class="agents-grid" id="agentsGrid">
+    <!-- Filled dynamically -->
+  </div>
+
+  <!-- Inbox Sidebar -->
+  <div class="inbox-panel">
+    <div class="inbox-header">
+      <span>📬 Inbox</span>
+      <span class="count" id="inboxCount">0</span>
+    </div>
+    <div class="inbox-messages" id="inboxMessages">
+      <div style="text-align:center;padding:30px 10px;color:#484f58;font-size:12px">
+        No messages yet.<br>Agents communicate here during the swarm.
+      </div>
+    </div>
+  </div>
+
+  <!-- Terminal Log -->
+  <div class="terminal-log" id="terminalLog">
+    <div class="terminal-empty">
+      ⚡ Awaiting swarm execution...<br>
+      <span style="font-size:11px;color:#3b4048">Click <strong>Run Swarm</strong> to launch the team.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── JavaScript ────────────────────────────────────── -->
+<script>
+// ── Agent Definitions ────────────────────────────────────────
+const AGENTS = [
+  {
+    id: 'coder',
+    name: 'Coder',
+    icon: '⚙️',
+    role: 'Implementation',
+    color: '#6cb6ff',
+    paneId: 'tmux:0',
+    worktree: 'feature/auth-module',
+    skills: ['Python', 'TypeScript', 'APIs'],
+    task: '',
+  },
+  {
+    id: 'reviewer',
+    name: 'Reviewer',
+    icon: '📋',
+    role: 'Code Review',
+    color: '#7ecb6b',
+    paneId: 'tmux:1',
+    worktree: 'feature/auth-module',
+    skills: ['Best practices', 'Security', 'Style'],
+    task: '',
+  },
+  {
+    id: 'tester',
+    name: 'Tester',
+    icon: '🔬',
+    role: 'Testing & QA',
+    color: '#e05f4a',
+    paneId: 'tmux:2',
+    worktree: 'feature/unit-tests',
+    skills: ['Unit tests', 'Integration', 'Coverage'],
+    task: '',
+  },
+  {
+    id: 'architect',
+    name: 'Architect',
+    icon: '🏗️',
+    role: 'System Design',
+    color: '#d2a6ff',
+    paneId: 'tmux:3',
+    worktree: 'feature/api-design',
+    skills: ['Architecture', 'Data flow', 'Diagrams'],
+    task: '',
+  },
+];
+
+// ── State ────────────────────────────────────────────────────
+let running = false;
+let eventNum = 0;
+let msgCount = 0;
+
+// ── Formatting ────────────────────────────────────────────────
+function fmtTime() {
+  const d = new Date();
+  return d.toLocaleTimeString('en-US', { hour12: false }) + '.' +
+    String(d.getMilliseconds()).padStart(3, '0');
+}
+
+// ── Build Agent Panes ─────────────────────────────────────────
+function buildPanes() {
+  const grid = document.getElementById('agentsGrid');
+  grid.innerHTML = '';
+  AGENTS.forEach(a => {
+    const pane = document.createElement('div');
+    pane.className = 'tmux-pane pending';
+    pane.id = 'pane-' + a.id;
+    pane.innerHTML = `
+      <div class="pane-header">
+        <div class="pane-dot" style="background:${a.color}"></div>
+        <span class="pane-title">${a.icon} ${a.name}</span>
+        <span class="pane-id">${a.paneId}</span>
+        <span class="pane-status-badge badge-idle" id="badge-${a.id}">IDLE</span>
+      </div>
+      <div class="pane-body">
+        <div class="pane-label">Role</div>
+        <div class="pane-value">${a.role}</div>
+        <div class="pane-label">Worktree</div>
+        <div class="pane-value" id="wt-${a.id}" style="font-size:11px;color:#5c6370">${a.worktree}</div>
+        <div class="pane-label">Task</div>
+        <div class="pane-value" id="task-${a.id}" style="font-size:11px;color:#5c6370">—</div>
+        <div class="pane-label">Progress</div>
+        <div class="pane-progress" id="prog-${a.id}">
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+        </div>
+      </div>
+    `;
+    grid.appendChild(pane);
+  });
+}
+
+// ── Update Agent Pane ─────────────────────────────────────────
+function setAgentStatus(agentId, phase, task, progress) {
+  const pane = document.getElementById('pane-' + agentId);
+  const badge = document.getElementById('badge-' + agentId);
+  const taskEl = document.getElementById('task-' + agentId);
+  if (!pane || !badge) return;
+
+  pane.classList.remove('pending', 'active', 'done');
+
+  if (phase === 'spawning') {
+    pane.classList.add('active');
+    badge.className = 'pane-status-badge badge-spawning';
+    badge.textContent = 'SPAWNING';
+  } else if (phase === 'working') {
+    pane.classList.add('active');
+    badge.className = 'pane-status-badge badge-working';
+    badge.textContent = 'WORKING';
+    if (task) taskEl.textContent = task;
+    if (progress !== undefined) updateProgress(agentId, progress);
+  } else if (phase === 'done') {
+    pane.classList.add('done');
+    pane.classList.remove('active');
+    badge.className = 'pane-status-badge badge-done';
+    badge.textContent = 'DONE';
+    taskEl.innerHTML = '<span style="color:#7ecb6b">✓ ' + (task || 'Complete') + '</span>';
+    updateProgress(agentId, 5);
+  }
+}
+
+function updateProgress(agentId, filled) {
+  const bars = document.querySelectorAll('#prog-' + agentId + ' .bar');
+  const colors = ['', '', '', 'orange', 'green'];
+  bars.forEach((bar, i) => {
+    if (i < filled) {
+      bar.classList.add('filled');
+      if (colors[i]) bar.classList.add(colors[i]);
+    } else {
+      bar.classList.remove('filled', 'green', 'orange');
+    }
+  });
+}
+
+// ── Set Leader Status ─────────────────────────────────────────
+function setLeaderStatus(phase, goalText) {
+  const status = document.getElementById('leaderStatus');
+  const goal = document.getElementById('leaderGoal');
+  const desc = document.getElementById('leaderDesc');
+
+  status.className = 'leader-status';
+  if (phase === 'idle') {
+    status.classList.add('ls-idle');
+    status.textContent = 'Idle';
+  } else if (phase === 'analyzing') {
+    status.classList.add('ls-working');
+    status.textContent = 'Analyzing…';
+  } else if (phase === 'spawning') {
+    status.classList.add('ls-working');
+    status.textContent = 'Spawning…';
+  } else if (phase === 'orchestrating') {
+    status.classList.add('ls-working');
+    status.textContent = 'Orchestrating';
+    if (desc) desc.textContent = 'Monitoring agents, coordinating tasks';
+  } else if (phase === 'merging') {
+    status.classList.add('ls-working');
+    status.textContent = 'Merging…';
+    if (desc) desc.textContent = 'Collecting results from all agents';
+  } else if (phase === 'done') {
+    status.classList.add('ls-done');
+    status.textContent = '✓ Complete';
+    if (desc) desc.textContent = 'All tasks completed and merged';
+  }
+  if (goalText) goal.textContent = goalText;
+}
+
+// ── Inbox ─────────────────────────────────────────────────────
+function addInboxMessage(from, text, colorClass) {
+  msgCount++;
+  const container = document.getElementById('inboxMessages');
+  // Remove empty state
+  const empty = container.querySelector('div[style*="text-align:center"]');
+  if (empty) empty.remove();
+
+  const msg = document.createElement('div');
+  msg.className = 'inbox-msg ' + (colorClass || 'msg-color-leader');
+  msg.innerHTML = `
+    <div class="msg-from">📨 ${from}</div>
+    <div class="msg-text">${text}</div>
+    <div class="msg-time">${fmtTime()}</div>
+  `;
+  container.appendChild(msg);
+  container.scrollTop = container.scrollHeight;
+  document.getElementById('inboxCount').textContent = msgCount;
+}
+
+// ── Terminal Log ──────────────────────────────────────────────
+function addLogLine(text, cls = 'info') {
+  eventNum++;
+  const log = document.getElementById('terminalLog');
+  // Remove empty state
+  const empty = log.querySelector('.terminal-empty');
+  if (empty) empty.remove();
+
+  const line = document.createElement('div');
+  line.className = 'log-line ' + cls;
+  line.innerHTML = `<span class="ts">[${fmtTime()}]</span> ${text}`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+// ── Pipeline Steps ────────────────────────────────────────────
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Client-side fallback pipeline ──────────────────────────────
+const FALLBACK_STEPS = [
+  // Each step: { type, ... }
+  // leader_status, agent_status, inbox_message, log_line, delay
+
+  // Step 1: Analyze
+  { type: 'leader_status', phase: 'analyzing', goalText: '🔍 Analyzing task: "Build authentication module with API endpoints"' },
+  { type: 'log_line', text: '🧠 Leader: Analyzing goal and breaking into sub-tasks...', cls: 'highlight' },
+  { type: 'log_line', text: '   ├─ Detected 4 sub-tasks: Implementation, Review, Testing, Architecture', cls: 'info' },
+  { type: 'log_line', text: '   └─ Resolving dependencies: Design → Implement → Review → Test', cls: 'info' },
+  { type: 'delay', ms: 800 },
+
+  // Step 2: Spawn
+  { type: 'leader_status', phase: 'spawning', goalText: '🧬 Spawning specialized sub-agents...' },
+];
+
+// Push spawn steps for each agent
+const SPAWN_AGENTS = [
+  { id: 'coder', name: 'Coder', paneId: 'tmux:0', worktree: 'feature/auth-module' },
+  { id: 'reviewer', name: 'Reviewer', paneId: 'tmux:1', worktree: 'feature/auth-module' },
+  { id: 'tester', name: 'Tester', paneId: 'tmux:2', worktree: 'feature/unit-tests' },
+  { id: 'architect', name: 'Architect', paneId: 'tmux:3', worktree: 'feature/api-design' },
+];
+for (const a of SPAWN_AGENTS) {
+  FALLBACK_STEPS.push(
+    { type: 'agent_status', agentId: a.id, phase: 'spawning', task: '', progress: 0 },
+    { type: 'log_line', text: `├─ Spawning ${a.name} in ${a.paneId} | worktree: ${a.worktree}`, cls: 'cmd' },
+    { type: 'log_line', text: `│  └─ git worktree add ${a.worktree} origin/main`, cls: 'cmd' },
+    { type: 'inbox_message', from: 'System', text: `Spawning ${a.name} agent in ${a.paneId}` },
+    { type: 'delay', ms: 400 },
+  );
+}
+FALLBACK_STEPS.push(
+  { type: 'log_line', text: '└─ All 4 sub-agents spawned successfully', cls: 'ok' },
+  { type: 'delay', ms: 500 },
+
+  // Step 3: Assign
+  { type: 'leader_status', phase: 'orchestrating', goalText: '📋 Assigning tasks to agents...' },
+  { type: 'agent_status', agentId: 'architect', phase: 'working', task: 'Design API endpoints & data model', progress: 2 },
+  { type: 'log_line', text: '📋 Assigning to Architect: "Design API endpoints & data model"', cls: 'cmd' },
+  { type: 'inbox_message', from: 'Leader Agent', text: 'Architect: Your task is → Design API endpoints & data model' },
+  { type: 'delay', ms: 400 },
+  { type: 'agent_status', agentId: 'coder', phase: 'working', task: 'Implement auth endpoints (JWT + OAuth)', progress: 1 },
+  { type: 'log_line', text: '📋 Assigning to Coder: "Implement auth endpoints (JWT + OAuth)"', cls: 'cmd' },
+  { type: 'inbox_message', from: 'Leader Agent', text: 'Coder: Your task is → Implement auth endpoints (JWT + OAuth)' },
+  { type: 'delay', ms: 400 },
+  { type: 'agent_status', agentId: 'reviewer', phase: 'working', task: 'Review auth module for security issues', progress: 4 },
+  { type: 'log_line', text: '📋 Assigning to Reviewer: "Review auth module for security issues"', cls: 'cmd' },
+  { type: 'inbox_message', from: 'Leader Agent', text: 'Reviewer: Your task is → Review auth module for security issues' },
+  { type: 'delay', ms: 400 },
+  { type: 'agent_status', agentId: 'tester', phase: 'working', task: 'Write unit & integration tests', progress: 3 },
+  { type: 'log_line', text: '📋 Assigning to Tester: "Write unit & integration tests"', cls: 'cmd' },
+  { type: 'inbox_message', from: 'Leader Agent', text: 'Tester: Your task is → Write unit & integration tests' },
+  { type: 'delay', ms: 500 },
+
+  // Step 4: Work
+  { type: 'leader_status', phase: 'orchestrating', goalText: '🔄 Agents working in parallel...' },
+  { type: 'log_line', text: '🏗️  Architect: Creating API spec with OpenAPI 3.0...', cls: 'info' },
+  { type: 'inbox_message', from: 'Architect', text: '@Leader API design complete — endpoints defined.' },
+  { type: 'delay', ms: 500 },
+  { type: 'agent_status', agentId: 'coder', phase: 'working', task: 'Implementing auth endpoints...', progress: 2 },
+  { type: 'log_line', text: '⚙️  Coder: Implementing JWT auth middleware...', cls: 'info' },
+  { type: 'log_line', text: '⚙️  Coder: Adding OAuth2 provider integration...', cls: 'info' },
+  { type: 'inbox_message', from: 'Coder', text: '@Reviewer PR ready: `feature/auth-module` — please review.' },
+  { type: 'delay', ms: 500 },
+  { type: 'agent_status', agentId: 'reviewer', phase: 'working', task: 'Reviewing auth module...', progress: 3 },
+  { type: 'log_line', text: '📋 Reviewer: Checking for security vulnerabilities...', cls: 'warn' },
+  { type: 'inbox_message', from: 'Reviewer', text: '@Coder Found 2 minor issues — fixed in commit 4a3f2b1.' },
+  { type: 'delay', ms: 400 },
+  { type: 'agent_status', agentId: 'reviewer', phase: 'working', task: 'Review complete, 2 issues fixed', progress: 4 },
+  { type: 'log_line', text: '📋 Reviewer: LGTM! Security audit passed.', cls: 'ok' },
+  { type: 'inbox_message', from: 'Reviewer', text: '@Leader Code review complete — module approved.' },
+  { type: 'delay', ms: 400 },
+  { type: 'agent_status', agentId: 'tester', phase: 'working', task: 'Writing unit tests...', progress: 2 },
+  { type: 'log_line', text: '🔬 Tester: Writing pytest test suite (24 test cases)...', cls: 'info' },
+  { type: 'delay', ms: 400 },
+  { type: 'agent_status', agentId: 'tester', phase: 'working', task: 'Running test suite...', progress: 4 },
+  { type: 'log_line', text: '🔬 Tester: 24/24 tests passed ✅ Coverage: 94%', cls: 'ok' },
+  { type: 'inbox_message', from: 'Tester', text: '@Leader All tests pass. Coverage at 94%.' },
+  { type: 'delay', ms: 400 },
+  { type: 'agent_status', agentId: 'architect', phase: 'working', task: 'Validating implementation', progress: 5 },
+  { type: 'log_line', text: '🏗️  Architect: Implementation matches design spec. Approved.', cls: 'ok' },
+  { type: 'inbox_message', from: 'Architect', text: '@Leader System validation complete.' },
+  { type: 'delay', ms: 500 },
+
+  // Step 5: Merge
+  { type: 'leader_status', phase: 'merging', goalText: '🔄 Merging all agent work...' },
+  { type: 'log_line', text: '🧠 Leader: Collecting results from all agents...', cls: 'highlight' },
+  { type: 'log_line', text: '   ├─ architect: Design approved ✅', cls: 'ok' },
+  { type: 'log_line', text: '   ├─ coder: Implementation complete ✅', cls: 'ok' },
+  { type: 'log_line', text: '   ├─ reviewer: Code review passed ✅', cls: 'ok' },
+  { type: 'log_line', text: '   └─ tester: 24/24 tests passing ✅', cls: 'ok' },
+  { type: 'log_line', text: 'Running: git merge feature/auth-module feature/unit-tests feature/api-design', cls: 'cmd' },
+  { type: 'delay', ms: 600 },
+
+  // Step 6: Done
+);
+
+const DONE_AGENTS = ['architect', 'coder', 'reviewer', 'tester'];
+for (const a of DONE_AGENTS) {
+  FALLBACK_STEPS.push({ type: 'agent_status', agentId: a, phase: 'done', task: 'Complete', progress: 5 });
+}
+FALLBACK_STEPS.push(
+  { type: 'leader_status', phase: 'done', goalText: '✅ Authentication module built and merged!' },
+  { type: 'log_line', text: '', cls: '' },
+  { type: 'log_line', text: '══════════════════════════════════════════════════════', cls: 'highlight' },
+  { type: 'log_line', text: '  ✅  SWARM COMPLETE — All tasks merged to main', cls: 'ok' },
+  { type: 'log_line', text: '  🧠  Leader: 4 agents coordinated, 6 inbox messages', cls: 'ok' },
+  { type: 'log_line', text: '  📦  Worktrees merged: auth-module, unit-tests, api-design', cls: 'ok' },
+  { type: 'log_line', text: '══════════════════════════════════════════════════════', cls: 'highlight' },
+  { type: 'inbox_message', from: 'Leader Agent', text: '@all Swarm complete. Great work team! 🎉' },
+);
+
+// Helper: check bridge mode from server status endpoint
+async function checkBridgeMode() {
+  try {
+    const res = await fetch('/realtime/clawteam/status');
+    const data = await res.json();
+    return data;
+  } catch (e) {
+    return { mode: 'mock' };
+  }
+}
+
+// Helper: try SSE connection to given URL; returns promise resolving to EventSource or null
+function trySseConnection(url) {
+  return new Promise((resolve) => {
+    try {
+      const es = new EventSource(url);
+      const timeout = setTimeout(() => {
+        es.close();
+        resolve(null);
+      }, 1500);
+      es.addEventListener('connected', () => {
+        clearTimeout(timeout);
+        resolve(es);
+      });
+      es.onerror = () => {
+        clearTimeout(timeout);
+        es.close();
+        resolve(null);
+      };
+    } catch (e) {
+      resolve(null);
+    }
+  });
+}
+
+// Process a single step from server (SSE) or fallback
+function processStep(step) {
+  switch (step.type) {
+    case 'leader_status':
+      setLeaderStatus(step.phase, step.goalText || '');
+      break;
+    case 'agent_status':
+      setAgentStatus(step.agentId, step.phase, step.task, step.progress);
+      break;
+    case 'inbox_message': {
+      // Map sender names to CSS color classes
+      const colorMap = { system: 'leader', 'leader agent': 'leader' };
+      const key = step.from.toLowerCase();
+      const cls = colorMap[key] || key.replace(/\s+/g, '-');
+      addInboxMessage(step.from, step.text, 'msg-color-' + cls);
+      break;
+    }
+    case 'log_line':
+      addLogLine(step.text, step.cls || 'info');
+      break;
+  }
+}
+
+async function runDemo() {
+  if (running) return;
+  running = true;
+  eventNum = 0;
+  msgCount = 0;
+
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('runBtn').innerHTML = '⏳ Connecting…';
+
+  // Clear previous state
+  document.getElementById('terminalLog').innerHTML = '';
+  document.getElementById('inboxMessages').innerHTML =
+    '<div style="text-align:center;padding:30px 10px;color:#484f58;font-size:12px">Messages appear here during the swarm.</div>';
+  document.getElementById('inboxCount').textContent = '0';
+  buildPanes();
+
+  try {
+    // Step 1: Check bridge mode from server
+    const bridgeStatus = await checkBridgeMode();
+    const mode = bridgeStatus.mode || 'mock';
+    const badge = document.getElementById('bridgeBadge');
+    badge.className = 'bridge-badge ' + mode;
+    if (mode === 'real') {
+      badge.innerHTML = '🧠 REAL ClawTeam';
+    } else if (mode === 'cli') {
+      badge.innerHTML = '🔧 CLI ClawTeam';
+    } else {
+      badge.innerHTML = '🔌 SIMULATED';
+    }
+
+    let sse = null;
+
+    // Step 2: Try real ClawTeam SSE if available
+    if (mode === 'real' || mode === 'cli') {
+      sse = await trySseConnection('/realtime/clawteam');
+    }
+
+    // Step 3: Fall back to mock SSE endpoint (original /events/clawteam)
+    if (!sse) {
+      sse = await trySseConnection('/events/clawteam');
+    }
+
+    if (sse) {
+      // SSE mode — server drives everything
+      document.getElementById('runBtn').innerHTML = '⏳ Running…';
+      await new Promise((resolve) => {
+        sse.addEventListener('leader_status', (e) => {
+          try { processStep(JSON.parse(e.data)); } catch (ex) {}
+        });
+        sse.addEventListener('agent_status', (e) => {
+          try { processStep(JSON.parse(e.data)); } catch (ex) {}
+        });
+        sse.addEventListener('inbox_message', (e) => {
+          try { processStep(JSON.parse(e.data)); } catch (ex) {}
+        });
+        sse.addEventListener('log_line', (e) => {
+          try { processStep(JSON.parse(e.data)); } catch (ex) {}
+        });
+        sse.addEventListener('heartbeat', (e) => {
+          // Keep-alive from real ClawTeam bridge — silently ignored
+        });
+        sse.addEventListener('pipeline_done', () => {
+          sse.close();
+          resolve();
+        });
+        sse.onerror = () => {
+          sse.close();
+          resolve();
+        };
+      });
+    } else {
+      // Fallback: client-side simulation
+      addLogLine('⚠️  No SSE endpoint available — using client-side simulation', 'warn');
+      for (const step of FALLBACK_STEPS) {
+        if (step.type === 'delay') {
+          await sleep(step.ms);
+        } else {
+          processStep(step);
+        }
+      }
+    }
+  } catch (err) {
+    addLogLine('❌ Error: ' + err.message, 'err');
+  } finally {
+    running = false;
+    document.getElementById('runBtn').disabled = false;
+    document.getElementById('runBtn').innerHTML = '▶ Run Swarm';
+  }
+}
+
+// ── Reset ─────────────────────────────────────────────────────
+function resetAll() {
+  if (running) return;
+  buildPanes();
+  document.getElementById('terminalLog').innerHTML =
+    '<div class="terminal-empty">⚡ Awaiting swarm execution...<br><span style="font-size:11px;color:#3b4048">Click <strong>Run Swarm</strong> to launch the team.</span></div>';
+  document.getElementById('inboxMessages').innerHTML =
+    '<div style="text-align:center;padding:30px 10px;color:#484f58;font-size:12px">No messages yet.<br>Agents communicate here during the swarm.</div>';
+  document.getElementById('inboxCount').textContent = '0';
+  setLeaderStatus('idle', '⏳ Click "Run Swarm" to start...');
+  document.getElementById('runBtn').disabled = false;
+  document.getElementById('runBtn').innerHTML = '▶ Run Swarm';
+  running = false;
+}
+
+// ── Init ──────────────────────────────────────────────────────
+buildPanes();
+</script>
+</body>
+</html>
