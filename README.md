@@ -2,7 +2,7 @@
 
 A glassmorphism-style calculator inspired by macOS Monterey's Calculator app with both **Basic** and **Scientific** modes.
 
-![Calculator Screenshot](screenshot.png)
+![Calculator Screenshot](screenshot.svg)
 
 ## Features
 
