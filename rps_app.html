@@ -1,0 +1,2136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Rock Paper Scissors — Swarm Arena</title>
+<style>
+  /* ═══════════════════════════════════════════════════
+     RESET & BASE
+     ═══════════════════════════════════════════════════ */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --violet-deep: #1a0a3e;
+    --violet: #6c3bff;
+    --violet-light: #9d7aff;
+    --violet-glow: rgba(108, 59, 255, 0.4);
+    --surface: #ffffff;
+    --surface-alt: #f5f3ff;
+    --text: #1a1a2e;
+    --text-dim: #6b6b8d;
+    --text-muted: #9a9ab0;
+    --border: #e8e6f0;
+    --win: #00c48c;
+    --win-glow: rgba(0, 196, 140, 0.35);
+    --lose: #ff6b6b;
+    --lose-glow: rgba(255, 107, 107, 0.35);
+    --draw: #ffb800;
+    --draw-glow: rgba(255, 184, 0, 0.35);
+    --rock: #ff6b6b;
+    --paper: #4a9eff;
+    --scissors: #ff9ff3;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-lg: 24px;
+    --radius-xl: 32px;
+    --shadow: 0 4px 24px rgba(26, 10, 62, 0.08);
+    --shadow-lg: 0 8px 40px rgba(26, 10, 62, 0.12);
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: var(--font);
+    background: #ffffff;
+    color: var(--text);
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ═══════════════════════════════════════════════════
+     HOME SCREEN — Full white page, centered Play button
+     ═══════════════════════════════════════════════════ */
+  .home {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .home.hidden {
+    opacity: 0;
+    transform: scale(1.05);
+    pointer-events: none;
+  }
+
+  .home-icon {
+    font-size: 80px;
+    margin-bottom: 12px;
+    display: block;
+    animation: homeFloat 3s ease-in-out infinite;
+  }
+  @keyframes homeFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .home-title {
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--text-dim);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 40px;
+  }
+
+  /* ── Home Play Button ──────── */
+  .home-play-wrap {
+    position: relative;
+  }
+  .home-play-wrap::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--violet), #b388ff, var(--violet));
+    background-size: 200% 200%;
+    animation: homeGlow 3s ease-in-out infinite;
+    opacity: 0.35;
+    filter: blur(12px);
+    z-index: -1;
+  }
+  @keyframes homeGlow {
+    0%, 100% { background-position: 0% 50%; transform: scale(1); }
+    50% { background-position: 100% 50%; transform: scale(1.1); }
+  }
+
+  .btn-home-play {
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, var(--violet), #8b5cf6);
+    color: #fff;
+    font-size: 48px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px var(--violet-glow);
+    font-family: inherit;
+    line-height: 1;
+  }
+  .btn-home-play:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 48px var(--violet-glow);
+  }
+  .btn-home-play:active {
+    transform: scale(0.95);
+  }
+  .btn-home-play .ripple {
+    position: absolute; border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    transform: scale(0);
+    animation: rippleAnim 0.6s ease-out;
+    pointer-events: none;
+  }
+  @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+
+  .home-play-label {
+    margin-top: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    opacity: 0;
+    animation: labelFadeIn 0.6s ease 0.5s forwards;
+  }
+  @keyframes labelFadeIn {
+    to { opacity: 1; }
+  }
+
+  /* ── Sound Toggle on Home ─── */
+  .home .btn-sound {
+    position: fixed;
+    top: 16px; right: 16px;
+    width: 38px; height: 38px;
+    border: none;
+    border-radius: 50%;
+    background: var(--surface-alt);
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    font-size: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 20;
+    font-family: inherit;
+    line-height: 1;
+    padding: 0;
+  }
+  .home .btn-sound:hover {
+    background: rgba(108, 59, 255, 0.08);
+    border-color: var(--violet-light);
+    transform: scale(1.08);
+  }
+  .home .btn-sound.muted { opacity: 0.5; }
+
+  /* ═══════════════════════════════════════════════════
+     ANIMATED BACKGROUND (for mode/game/results)
+     ═══════════════════════════════════════════════════ */
+  .bg-effects {
+    position: fixed; inset: 0; z-index: 0;
+    overflow: hidden; pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+  .bg-effects.visible { opacity: 1; }
+  .bg-effects .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.15;
+    animation: orbFloat 25s ease-in-out infinite;
+  }
+  .bg-effects .orb:nth-child(1) {
+    width: 600px; height: 600px;
+    background: var(--violet);
+    top: -20%; left: -20%;
+  }
+  .bg-effects .orb:nth-child(2) {
+    width: 450px; height: 450px;
+    background: #b388ff;
+    bottom: -15%; right: -15%;
+    animation-delay: -8s;
+  }
+  .bg-effects .orb:nth-child(3) {
+    width: 350px; height: 350px;
+    background: #7c4dff;
+    top: 40%; left: 60%;
+    animation-delay: -16s;
+    opacity: 0.08;
+  }
+  @keyframes orbFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(40px, -40px) scale(1.1); }
+    66% { transform: translate(-30px, 30px) scale(0.9); }
+  }
+
+  .bg-stars {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+  .bg-stars.visible { opacity: 1; }
+  .bg-stars .star {
+    position: absolute;
+    width: 2px; height: 2px;
+    background: rgba(255,255,255,0.4);
+    border-radius: 50%;
+    animation: starTwinkle 3s ease-in-out infinite;
+  }
+  @keyframes starTwinkle {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.1; }
+  }
+
+  /* ═══════════════════════════════════════════════════
+     APP CONTAINER (for mode/game/results)
+     ═══════════════════════════════════════════════════ */
+  .app {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    padding: 16px;
+    opacity: 1;
+    transition: opacity 0.6s ease;
+  }
+  .app.hidden { display: none; opacity: 0; }
+
+  .game-card {
+    width: 420px; max-width: 100%;
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .game-card-inner {
+    padding: 28px 24px 24px;
+    position: relative;
+  }
+
+  .game-card-inner::before {
+    content: '';
+    position: absolute; top: 0; left: 24px; right: 24px; height: 3px;
+    background: linear-gradient(90deg, var(--violet), var(--violet-light), var(--violet));
+    border-radius: 0 0 3px 3px;
+  }
+
+  /* ═══════════════════════════════════════════════════
+     SCREEN MANAGEMENT
+     ═══════════════════════════════════════════════════ */
+  .screen { display: none; }
+  .screen.active { display: block; animation: screenIn 0.35s ease; }
+  @keyframes screenIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ═══════════════════════════════════════════════════
+     MODE SELECTION SCREEN
+     ═══════════════════════════════════════════════════ */
+  .mode-select {
+    text-align: center;
+    padding: 10px 0 4px;
+  }
+
+  .mode-character {
+    font-size: 80px;
+    margin-bottom: 6px;
+    animation: charFloat 3s ease-in-out infinite;
+    display: block;
+  }
+  @keyframes charFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-12px) scale(1.05); }
+  }
+
+  .mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 14px;
+    background: var(--surface-alt);
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--violet);
+    margin-bottom: 14px;
+    letter-spacing: 0.5px;
+  }
+
+  .mode-title {
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, var(--violet-deep), var(--violet));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .mode-sub {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  .mode-hands {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .mode-hands .hand-icon {
+    font-size: 36px;
+    width: 60px; height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-alt);
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    animation: handWave 2s ease-in-out infinite;
+  }
+  .mode-hands .hand-icon:nth-child(1) { animation-delay: 0s; }
+  .mode-hands .hand-icon:nth-child(2) { animation-delay: 0.2s; }
+  .mode-hands .hand-icon:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes handWave {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-6px) rotate(-5deg); }
+    75% { transform: translateY(-3px) rotate(5deg); }
+  }
+
+  .bestof-section { margin-bottom: 20px; }
+  .bestof-label {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .bestof-options {
+    display: flex; justify-content: center; gap: 8px;
+  }
+  .bestof-opt {
+    padding: 9px 22px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-alt);
+    border: 2px solid var(--border);
+    color: var(--text-dim);
+    font-size: 15px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .bestof-opt:hover {
+    border-color: var(--violet-light);
+    color: var(--violet);
+  }
+  .bestof-opt.selected {
+    background: rgba(108, 59, 255, 0.1);
+    border-color: var(--violet);
+    color: var(--violet);
+    box-shadow: 0 0 16px var(--violet-glow);
+  }
+
+  .btn-battle {
+    width: 100%;
+    padding: 16px 32px;
+    border: none;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--violet), #8b5cf6);
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 20px var(--violet-glow);
+  }
+  .btn-battle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px var(--violet-glow);
+  }
+  .btn-battle:active { transform: translateY(0); }
+  .btn-battle .ripple {
+    position: absolute; border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    transform: scale(0);
+    animation: rippleAnim 0.6s ease-out;
+    pointer-events: none;
+  }
+  @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+
+  /* ═══════════════════════════════════════════════════
+     GAME SCREEN
+     ═══════════════════════════════════════════════════ */
+  .game-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .game-round-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .round-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+  }
+  .round-dots {
+    display: flex; gap: 5px;
+  }
+  .round-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--surface-alt);
+    border: 1.5px solid var(--border);
+    transition: all 0.3s ease;
+  }
+  .round-dot.won { background: var(--win); border-color: var(--win); box-shadow: 0 0 6px var(--win-glow); }
+  .round-dot.lost { background: var(--lose); border-color: var(--lose); box-shadow: 0 0 6px var(--lose-glow); }
+  .round-dot.draw { background: var(--draw); border-color: var(--draw); box-shadow: 0 0 6px var(--draw-glow); }
+  .round-dot.current { border-color: var(--violet); animation: dotPulse 1.2s ease-in-out infinite; }
+  @keyframes dotPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .score-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 18px;
+  }
+  .score-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 8px;
+    background: var(--surface-alt);
+  }
+  .score-label {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+  }
+  .score-val { font-variant-numeric: tabular-nums; }
+  .score-div { color: var(--text-muted); font-size: 14px; }
+
+  /* ── Battle Arena ─── */
+  .battle-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    min-height: 170px;
+    position: relative;
+  }
+
+  .choice-display {
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: var(--surface-alt);
+    border: 3px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 56px;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .choice-display .choice-label {
+    position: absolute;
+    bottom: -24px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .choice-display.shaking {
+    animation: handShake 0.12s ease-in-out infinite;
+  }
+  @keyframes handShake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg) scale(1.03); }
+    75% { transform: rotate(10deg) scale(1.03); }
+  }
+  .choice-display.win {
+    border-color: var(--win);
+    box-shadow: 0 0 35px var(--win-glow), inset 0 0 15px var(--win-glow);
+    background: rgba(0, 196, 140, 0.06);
+  }
+  .choice-display.lose {
+    border-color: var(--lose);
+    box-shadow: 0 0 35px var(--lose-glow), inset 0 0 15px var(--lose-glow);
+    background: rgba(255, 107, 107, 0.06);
+  }
+  .choice-display.draw {
+    border-color: var(--draw);
+    box-shadow: 0 0 35px var(--draw-glow), inset 0 0 15px var(--draw-glow);
+    background: rgba(255, 184, 0, 0.06);
+  }
+
+  .vs-badge {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    opacity: 0.6;
+  }
+  .battle-area.revealing .vs-badge {
+    animation: vsPulse 0.5s ease-in-out infinite;
+  }
+  @keyframes vsPulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.2); opacity: 1; }
+  }
+
+  /* ── Countdown Overlay ─── */
+  .countdown-overlay {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 60px;
+    font-weight: 800;
+    color: var(--violet-deep);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 10;
+    text-shadow: 0 0 30px rgba(108, 59, 255, 0.2);
+  }
+  .countdown-overlay.show { opacity: 1; }
+  .countdown-overlay.shoot { color: var(--violet); font-size: 42px; }
+
+  /* ── Status ─── */
+  .status-area {
+    text-align: center;
+    margin-bottom: 16px;
+    min-height: 44px;
+  }
+  .status-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-dim);
+    transition: all 0.3s ease;
+  }
+  .status-text.win-text { color: var(--win); font-weight: 600; }
+  .status-text.lose-text { color: var(--lose); font-weight: 600; }
+  .status-text.draw-text { color: var(--draw); font-weight: 600; }
+
+  /* ── Strategy Reveal ─── */
+  .strategy-reveal {
+    text-align: center;
+    margin-bottom: 12px;
+    min-height: 22px;
+  }
+  .strategy-reveal .strategy-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .strategy-reveal .strategy-text.show { opacity: 1; }
+
+  /* ── Choice Buttons ─── */
+  .choice-section { margin-bottom: 6px; }
+  .choice-section-label {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .choice-section-label span {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+  }
+
+  .choice-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+  }
+  .btn-choice {
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    background: var(--surface-alt);
+    border: 2.5px solid var(--border);
+    font-size: 38px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+  }
+  .btn-choice:hover:not(:disabled) {
+    transform: translateY(-4px) scale(1.06);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  }
+  .btn-choice:active:not(:disabled) { transform: translateY(-1px) scale(0.98); }
+  .btn-choice:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
+  .btn-choice .key-hint {
+    position: absolute;
+    top: -4px; right: -4px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-choice[data-choice="rock"]:hover:not(:disabled) {
+    border-color: var(--rock);
+    box-shadow: 0 8px 24px rgba(255,107,107,0.15);
+  }
+  .btn-choice[data-choice="paper"]:hover:not(:disabled) {
+    border-color: var(--paper);
+    box-shadow: 0 8px 24px rgba(74,158,255,0.15);
+  }
+  .btn-choice[data-choice="scissors"]:hover:not(:disabled) {
+    border-color: var(--scissors);
+    box-shadow: 0 8px 24px rgba(255,159,243,0.15);
+  }
+
+  .btn-choice.locked { cursor: wait; opacity: 0.6; }
+
+  /* ── Next Round ─── */
+  .next-action {
+    text-align: center;
+    margin-top: 18px;
+  }
+  .btn-next {
+    padding: 12px 32px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-alt);
+    border: 2px solid var(--border);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    font-family: inherit;
+    display: none;
+  }
+  .btn-next:hover {
+    border-color: var(--violet-light);
+    background: rgba(108, 59, 255, 0.05);
+    color: var(--violet);
+  }
+  .btn-next.show { display: inline-block; animation: fadeInUp 0.3s ease; }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ═══════════════════════════════════════════════════
+     SWARM INSIGHTS PANEL
+     ═══════════════════════════════════════════════════ */
+  .swarm-insights {
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: var(--surface-alt);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    min-height: 52px;
+    transition: all 0.3s ease;
+  }
+  .swarm-insights-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .swarm-insights-header .label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .swarm-agents {
+    display: flex;
+    gap: 4px;
+  }
+  .swarm-agent-dot {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    transition: all 0.3s ease;
+  }
+  .swarm-agent-dot.active {
+    border-color: var(--violet);
+    background: rgba(108, 59, 255, 0.1);
+    box-shadow: 0 0 10px var(--violet-glow);
+    transform: scale(1.15);
+  }
+  .swarm-agent-dot.done {
+    border-color: var(--win);
+    background: rgba(0, 196, 140, 0.1);
+  }
+
+  .swarm-insight-text {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    min-height: 20px;
+    transition: all 0.3s ease;
+  }
+  .swarm-insight-text.animate {
+    animation: insightIn 0.35s ease;
+  }
+  @keyframes insightIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .swarm-insight-text .highlight { color: var(--violet); font-weight: 600; }
+  .swarm-insight-text .win-highlight { color: var(--win); font-weight: 600; }
+  .swarm-insight-text .lose-highlight { color: var(--lose); font-weight: 600; }
+
+  /* ═══════════════════════════════════════════════════
+     RESULTS SCREEN
+     ═══════════════════════════════════════════════════ */
+  .results {
+    text-align: center;
+    padding: 8px 0;
+  }
+  .results-icon {
+    font-size: 72px;
+    margin-bottom: 10px;
+    animation: resultPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes resultPop {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .results-title {
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .results-title.win { color: var(--win); }
+  .results-title.lose { color: var(--lose); }
+  .results-title.draw-title { color: var(--draw); }
+  .results-sub {
+    font-size: 15px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+
+  .results-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .stat-box {
+    padding: 14px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+  }
+  .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .stat-value.green { color: var(--win); }
+  .stat-value.red { color: var(--lose); }
+  .stat-value.amber { color: var(--draw); }
+  .stat-label {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+  }
+
+  .results-agent-summary {
+    text-align: left;
+    padding: 12px 14px;
+    background: var(--surface-alt);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-dim);
+    white-space: pre-line;
+  }
+  .results-agent-summary .summary-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  .results-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  .btn-home {
+    padding: 12px 24px;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: 2px solid var(--border);
+    color: var(--text-dim);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    font-family: inherit;
+  }
+  .btn-home:hover {
+    background: var(--surface-alt);
+    border-color: var(--text-muted);
+    color: var(--text);
+  }
+  .btn-rematch {
+    padding: 12px 28px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--violet), #8b5cf6);
+    border: none;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+  }
+  .btn-rematch:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px var(--violet-glow);
+  }
+
+  /* ═══════════════════════════════════════════════════
+     CONFETTI
+     ═══════════════════════════════════════════════════ */
+  .confetti-container {
+    position: fixed; inset: 0; z-index: 100;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .confetti-piece {
+    position: absolute;
+    width: 8px; height: 8px;
+    top: -10px;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg) scale(0.3); opacity: 0; }
+  }
+
+  /* ═══════════════════════════════════════════════════
+     SOUND TOGGLE (in card)
+     ═══════════════════════════════════════════════════ */
+  .card-btn-sound {
+    position: absolute;
+    top: 12px; right: 12px;
+    width: 34px; height: 34px;
+    border: none;
+    border-radius: 50%;
+    background: var(--surface-alt);
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 20;
+    font-family: inherit;
+    line-height: 1;
+    padding: 0;
+  }
+  .card-btn-sound:hover {
+    background: rgba(108, 59, 255, 0.08);
+    border-color: var(--violet-light);
+    transform: scale(1.08);
+  }
+  .card-btn-sound.muted { opacity: 0.5; }
+
+  /* ═══════════════════════════════════════════════════
+     RESPONSIVE
+     ═══════════════════════════════════════════════════ */
+  @media (max-width: 440px) {
+    .app { padding: 12px; }
+    .game-card-inner { padding: 20px 16px 18px; }
+    .mode-title { font-size: 28px; }
+    .mode-character { font-size: 64px; }
+    .choice-display { width: 100px; height: 100px; font-size: 44px; }
+    .btn-choice { width: 74px; height: 74px; font-size: 32px; }
+    .choice-buttons { gap: 8px; }
+    .battle-area { gap: 10px; min-height: 140px; }
+    .results-title { font-size: 26px; }
+    .results-stats { gap: 6px; }
+    .countdown-overlay { font-size: 48px; }
+    .countdown-overlay.shoot { font-size: 34px; }
+    .mode-hands .hand-icon { width: 50px; height: 50px; font-size: 30px; }
+    .swarm-insights { padding: 10px 12px; }
+    .game-header { flex-direction: column; gap: 8px; align-items: flex-start; }
+    .home-icon { font-size: 64px; }
+    .home-title { font-size: 22px; }
+    .btn-home-play { width: 100px; height: 100px; font-size: 40px; }
+  }
+
+  @media (max-width: 360px) {
+    .game-card-inner { padding: 16px 12px; }
+    .mode-title { font-size: 24px; }
+    .choice-display { width: 84px; height: 84px; font-size: 36px; }
+    .btn-choice { width: 64px; height: 64px; font-size: 28px; }
+    .btn-choice .key-hint { width: 18px; height: 18px; font-size: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ HOME SCREEN — Full white page, centered Play button ═══ -->
+<div class="home active" id="homeScreen">
+  <span class="home-icon">✊✋✌️</span>
+  <h1 class="home-title">Rock Paper Scissors</h1>
+  <div class="home-play-wrap">
+    <button class="btn-home-play" id="playBtn" onclick="showModeScreen()" aria-label="Play">
+      ▶
+    </button>
+  </div>
+  <span class="home-play-label">Tap to play</span>
+  <button class="btn-sound" id="soundToggle" onclick="toggleSound()" title="Toggle sound">🔊</button>
+</div>
+
+<!-- ═══ BACKGROUND EFFECTS (for mode/game/results) ═══ -->
+<div class="bg-effects" id="bgEffects">
+  <div class="orb"></div>
+  <div class="orb"></div>
+  <div class="orb"></div>
+</div>
+<div class="bg-stars" id="bgStars"></div>
+
+<div class="app hidden" id="appContainer">
+  <div class="game-card" id="gameCard">
+    <div class="game-card-inner">
+
+      <!-- ═══ MODE SELECTION SCREEN ═══ -->
+      <div class="screen mode-select active" id="modeScreen">
+        <span class="mode-character">🤖</span>
+        <div class="mode-badge">🌀 Powered by Swarm Agents</div>
+        <h1 class="mode-title">Choose Your<br>Challenge</h1>
+        <p class="mode-sub">Select your match length and enter the arena</p>
+
+        <div class="mode-hands">
+          <div class="hand-icon">✊</div>
+          <div class="hand-icon">✋</div>
+          <div class="hand-icon">✌️</div>
+        </div>
+
+        <div class="bestof-section">
+          <div class="bestof-label">Match Length</div>
+          <div class="bestof-options" id="bestofOptions">
+            <button class="bestof-opt" data-value="3">Best of 3</button>
+            <button class="bestof-opt selected" data-value="5">Best of 5</button>
+            <button class="bestof-opt" data-value="7">Best of 7</button>
+          </div>
+        </div>
+
+        <button class="btn-battle" id="battleBtn" onclick="enterArena()">
+          ⚔️ Find Your Opponent
+        </button>
+        <button class="card-btn-sound" id="cardSoundToggle" onclick="toggleSound()" title="Toggle sound">🔊</button>
+      </div>
+
+      <!-- ═══ GAME SCREEN ═══ -->
+      <div class="screen game" id="gameScreen">
+        <div class="game-header">
+          <div class="game-round-info">
+            <span class="round-label" id="roundLabel">Round 1</span>
+            <div class="round-dots" id="roundDots"></div>
+          </div>
+          <div class="score-display">
+            <div class="score-box">
+              <span class="score-label">You</span>
+              <span class="score-val" id="playerScore">0</span>
+            </div>
+            <span class="score-div">:</span>
+            <div class="score-box">
+              <span class="score-label">Bot</span>
+              <span class="score-val" id="botScore">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="status-area">
+          <div class="status-text" id="statusText">Choose your move</div>
+        </div>
+
+        <div class="battle-area" id="battleArea">
+          <div class="choice-display" id="playerChoiceDisplay">
+            <span id="playerChoiceEmoji">❔</span>
+            <span class="choice-label">You</span>
+          </div>
+          <div class="vs-badge" id="vsBadge">VS</div>
+          <div class="choice-display" id="botChoiceDisplay">
+            <span id="botChoiceEmoji">🗿</span>
+            <span class="choice-label">Bot</span>
+          </div>
+          <div class="countdown-overlay" id="countdownOverlay"></div>
+        </div>
+
+        <div class="strategy-reveal">
+          <div class="strategy-text" id="strategyText"></div>
+        </div>
+
+        <div class="choice-section">
+          <div class="choice-section-label"><span>Make Your Move</span></div>
+          <div class="choice-buttons">
+            <button class="btn-choice" data-choice="rock" onclick="playerChoice('rock')">
+              ✊<span class="key-hint">1</span>
+            </button>
+            <button class="btn-choice" data-choice="paper" onclick="playerChoice('paper')">
+              ✋<span class="key-hint">2</span>
+            </button>
+            <button class="btn-choice" data-choice="scissors" onclick="playerChoice('scissors')">
+              ✌️<span class="key-hint">3</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="next-action">
+          <button class="btn-next" id="nextBtn" onclick="nextRound()">
+            Next Round →
+          </button>
+        </div>
+
+        <!-- Swarm Insights Panel -->
+        <div class="swarm-insights" id="swarmInsights">
+          <div class="swarm-insights-header">
+            <div class="label">🌀 Swarm Activity</div>
+            <div class="swarm-agents" id="swarmAgents">
+              <span class="swarm-agent-dot" title="GameMaster" id="dot-gm">🎮</span>
+              <span class="swarm-agent-dot" title="BotStrategist" id="dot-bs">🧠</span>
+              <span class="swarm-agent-dot" title="ScoreAnalyst" id="dot-sa">📊</span>
+              <span class="swarm-agent-dot" title="Narrator" id="dot-nr">📖</span>
+            </div>
+          </div>
+          <div class="swarm-insight-text" id="swarmText">
+            <span class="highlight">GameMaster</span> waiting for your move...
+          </div>
+        </div>
+        <button class="card-btn-sound" id="gameSoundToggle" onclick="toggleSound()" title="Toggle sound">🔊</button>
+      </div>
+
+      <!-- ═══ RESULTS SCREEN ═══ -->
+      <div class="screen results" id="resultsScreen">
+        <div class="results-icon" id="resultsIcon">🏆</div>
+        <div class="results-title" id="resultsTitle">You Win!</div>
+        <div class="results-sub" id="resultsSub">Final score: 3 - 1</div>
+
+        <div class="results-stats">
+          <div class="stat-box">
+            <div class="stat-value green" id="rWins">0</div>
+            <div class="stat-label">Wins</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value red" id="rLosses">0</div>
+            <div class="stat-label">Losses</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value amber" id="rDraws">0</div>
+            <div class="stat-label">Draws</div>
+          </div>
+        </div>
+
+        <div class="results-agent-summary" id="resultsSummary">
+          <div class="summary-title">📊 ScoreAnalyst Report</div>
+          <span id="resultsSummaryText">Match analysis loading...</span>
+        </div>
+
+        <div class="results-actions">
+          <button class="btn-home" onclick="goHome()">← Home</button>
+          <button class="btn-rematch" onclick="rematch()">Play Again</button>
+        </div>
+
+        <button class="card-btn-sound" id="resultsSoundToggle" onclick="toggleSound()" title="Toggle sound">🔊</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Confetti -->
+<div class="confetti-container" id="confettiContainer"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  AUDIO MANAGER — Web Audio API sound effects (no files needed)
+// ════════════════════════════════════════════════════════════════
+
+class AudioManager {
+  constructor() {
+    this._ctx = null;
+    this._enabled = true;
+    this._initialized = false;
+  }
+
+  _getContext() {
+    if (!this._ctx) {
+      try {
+        this._ctx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) {
+        return null;
+      }
+    }
+    if (this._ctx.state === 'suspended') {
+      this._ctx.resume();
+    }
+    return this._ctx;
+  }
+
+  _play(fn) {
+    if (!this._enabled) return;
+    const ctx = this._getContext();
+    if (!ctx) return;
+    this._initialized = true;
+    try { fn(ctx); } catch (e) { /* ignore audio errors */ }
+  }
+
+  _tone(ctx, freq, duration, type = 'sine', volume = 0.12, delay = 0) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+    gain.gain.setValueAtTime(volume, ctx.currentTime + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime + delay);
+    osc.stop(ctx.currentTime + delay + duration);
+  }
+
+  _noise(ctx, duration, volume = 0.04, delay = 0) {
+    const bufferSize = ctx.sampleRate * duration;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(volume, ctx.currentTime + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+    source.connect(gain);
+    gain.connect(ctx.destination);
+    source.start(ctx.currentTime + delay);
+  }
+
+  click() {
+    this._play(ctx => {
+      this._tone(ctx, 800, 0.06, 'square', 0.04);
+      this._tone(ctx, 1200, 0.04, 'sine', 0.03);
+    });
+  }
+
+  countdown(step) {
+    this._play(ctx => {
+      const freqs = [400, 500, 650];
+      const f = freqs[step] || 400;
+      this._tone(ctx, f, 0.15, 'triangle', 0.08);
+      this._tone(ctx, f * 1.5, 0.1, 'sine', 0.04);
+    });
+  }
+
+  shoot() {
+    this._play(ctx => {
+      this._tone(ctx, 200, 0.25, 'sawtooth', 0.1);
+      this._tone(ctx, 400, 0.15, 'square', 0.06);
+      this._noise(ctx, 0.12, 0.06);
+    });
+  }
+
+  roundWin() {
+    this._play(ctx => {
+      this._tone(ctx, 523, 0.15, 'sine', 0.08);
+      this._tone(ctx, 659, 0.15, 'sine', 0.08, 0.12);
+      this._tone(ctx, 784, 0.25, 'sine', 0.1, 0.24);
+    });
+  }
+
+  roundLose() {
+    this._play(ctx => {
+      this._tone(ctx, 400, 0.2, 'triangle', 0.07);
+      this._tone(ctx, 350, 0.2, 'triangle', 0.06, 0.15);
+      this._tone(ctx, 300, 0.3, 'triangle', 0.05, 0.3);
+    });
+  }
+
+  roundDraw() {
+    this._play(ctx => {
+      this._tone(ctx, 440, 0.12, 'sine', 0.06);
+      this._tone(ctx, 440, 0.12, 'triangle', 0.04, 0.1);
+    });
+  }
+
+  gameOverWin() {
+    this._play(ctx => {
+      const notes = [523, 659, 784, 1047];
+      notes.forEach((f, i) => {
+        this._tone(ctx, f, 0.2, 'sine', 0.08, i * 0.12);
+      });
+      this._tone(ctx, 1047, 0.5, 'sine', 0.12, 0.5);
+    });
+  }
+
+  gameOverLose() {
+    this._play(ctx => {
+      this._tone(ctx, 350, 0.3, 'triangle', 0.07);
+      this._tone(ctx, 260, 0.3, 'triangle', 0.06, 0.25);
+      this._tone(ctx, 200, 0.5, 'triangle', 0.05, 0.5);
+    });
+  }
+
+  nextRound() {
+    this._play(ctx => {
+      this._tone(ctx, 600, 0.08, 'sine', 0.05);
+      this._tone(ctx, 800, 0.08, 'sine', 0.04, 0.06);
+      this._tone(ctx, 1000, 0.1, 'sine', 0.03, 0.12);
+    });
+  }
+
+  swarmActivate(name) {
+    this._play(ctx => {
+      const tones = {
+        'GameMaster': [800, 1000, 1200],
+        'BotStrategist': [500, 650, 800],
+        'ScoreAnalyst': [600, 750, 900],
+        'Narrator': [700, 850, 1000],
+      };
+      const freqs = tones[name] || [600, 800, 1000];
+      freqs.forEach((f, i) => {
+        this._tone(ctx, f, 0.06, 'sine', 0.04, i * 0.05);
+      });
+    });
+  }
+
+  confetti() {
+    this._play(ctx => {
+      for (let i = 0; i < 12; i++) {
+        const f = 800 + Math.random() * 2000;
+        const t = 0.1 + Math.random() * 0.4;
+        this._tone(ctx, f, 0.08, 'sine', 0.02 + Math.random() * 0.03, t);
+      }
+    });
+  }
+
+  toggle() {
+    this._enabled = !this._enabled;
+    if (this._enabled && !this._initialized) {
+      this._play(() => {});
+    }
+    return this._enabled;
+  }
+}
+
+const audio = new AudioManager();
+
+function toggleSound() {
+  const enabled = audio.toggle();
+  document.querySelectorAll('.btn-sound, .card-btn-sound').forEach(btn => {
+    btn.textContent = enabled ? '🔊' : '🔇';
+    btn.classList.toggle('muted', !enabled);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SWARM AGENT SYSTEM (JavaScript)
+// ════════════════════════════════════════════════════════════════
+
+class Agent {
+  constructor(name, instructions, fn = null) {
+    this.name = name;
+    this.instructions = instructions;
+    this.fn = fn;
+  }
+  execute(...args) {
+    if (this.fn) return this.fn(...args);
+    return null;
+  }
+}
+
+class EventBus {
+  constructor() {
+    this._subscribers = {};
+  }
+  subscribe(hook, callback) {
+    if (!this._subscribers[hook]) this._subscribers[hook] = [];
+    this._subscribers[hook].push(callback);
+  }
+  emit(hook, data = {}) {
+    (this._subscribers[hook] || []).forEach(cb => {
+      try { cb(data); } catch (e) { /* ignore */ }
+    });
+  }
+}
+
+const CHOICES = ['rock', 'paper', 'scissors'];
+const CHOICE_EMOJI = { rock: '✊', paper: '✋', scissors: '✌️' };
+const CHOICE_NAME = { rock: 'Rock', paper: 'Paper', scissors: 'Scissors' };
+const CHOICE_BEATS = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+
+const BotStrategist = new Agent('BotStrategist',
+  'Analyze player patterns and make strategic counter-moves',
+  (playerHistory) => {
+    const history = playerHistory || [];
+    if (history.length === 0) {
+      return { choice: CHOICES[Math.floor(Math.random() * 3)], strategy: 'random' };
+    }
+    if (history.length === 1) {
+      const counter = Object.keys(CHOICE_BEATS).find(k => CHOICE_BEATS[k] === history[0]);
+      return { choice: counter || CHOICES[0], strategy: 'counter' };
+    }
+    const last = history[history.length - 1];
+    const secondLast = history[history.length - 2];
+    if (last === secondLast && history.length >= 2) {
+      const counter = Object.keys(CHOICE_BEATS).find(k => CHOICE_BEATS[k] === last);
+      return { choice: counter || CHOICES[0], strategy: 'pattern' };
+    }
+    if (history.length >= 3) {
+      const p3 = history[history.length - 3];
+      if (p3 === last && secondLast !== last) {
+        const counter = Object.keys(CHOICE_BEATS).find(k => CHOICE_BEATS[k] === secondLast);
+        return { choice: counter || CHOICES[0], strategy: 'pattern' };
+      }
+      const last3 = history.slice(-3);
+      if (last3[0] === 'rock' && last3[1] === 'paper' && last3[2] === 'scissors') {
+        return { choice: 'rock', strategy: 'pattern' };
+      }
+    }
+    const counter = Object.keys(CHOICE_BEATS).find(k => CHOICE_BEATS[k] === last);
+    return { choice: counter || CHOICES[0], strategy: 'adaptive' };
+  }
+);
+
+const ScoreAnalyst = new Agent('ScoreAnalyst',
+  'Track game statistics and generate performance insights',
+  (gameState) => {
+    const { playerScore, botScore, wins, losses, draws, rounds, bestOf } = gameState;
+    const total = rounds.length;
+    const stats = {
+      totalRounds: total,
+      winRate: total > 0 ? Math.round((wins / total) * 100) : 0,
+      lossRate: total > 0 ? Math.round((losses / total) * 100) : 0,
+      drawRate: total > 0 ? Math.round((draws / total) * 100) : 0,
+      scoreDiff: playerScore - botScore,
+      prediction: ''
+    };
+    if (playerScore > botScore) {
+      stats.prediction = `You're ahead ${playerScore}-${botScore}. ` +
+        (playerScore >= Math.ceil(bestOf / 2) ? 'Match point!' : 'Keep the pressure on!');
+    } else if (botScore > playerScore) {
+      stats.prediction = `Trailing ${playerScore}-${botScore}. ` +
+        (botScore >= Math.ceil(bestOf / 2) ? 'The bot has match point!' : 'Time for a comeback!');
+    } else {
+      stats.prediction = `All tied at ${playerScore}. Every round counts!`;
+    }
+    return stats;
+  }
+);
+
+const Narrator = new Agent('Narrator',
+  'Provide engaging thematic commentary for the game',
+  (winner, playerChoice, botChoice, strategy) => {
+    const comments = {
+      player: [
+        `A brilliant move! ${CHOICE_EMOJI[playerChoice]} beats ${CHOICE_EMOJI[botChoice]}!`,
+        `Outplayed! The bot's ${strategy} strategy was no match for you!`,
+        `Flawless victory! ${CHOICE_NAME[playerChoice]} triumphs over ${CHOICE_NAME[botChoice]}!`,
+        `The crowd erupts as your ${CHOICE_NAME[playerChoice]} crushes the bot's ${CHOICE_NAME[botChoice]}!`,
+        `Textbook play! You read the situation perfectly!`,
+        `The bot reels from that decisive ${CHOICE_NAME[playerChoice]}!`,
+      ],
+      bot: [
+        `The bot counters with ${CHOICE_NAME[botChoice]}! A calculated move.`,
+        `The algorithm saw that coming! ${CHOICE_NAME[botChoice]} prevails.`,
+        `A cold, logical choice from the machine mind. ${CHOICE_NAME[botChoice]} wins this round.`,
+        `The bot's ${strategy} analysis paid off! ${CHOICE_NAME[botChoice]} takes the round.`,
+        `Even the best get outplayed. The bot claims this round with ${CHOICE_NAME[botChoice]}.`,
+      ],
+      draw: [
+        `Great minds think alike! Both chose ${CHOICE_NAME[playerChoice]}!`,
+        `A perfect mirror! Neither gains an edge.`,
+        `Symmetry in the arena! Both players matched.`,
+        `The universe seeks balance... a ${CHOICE_NAME[playerChoice]} standoff!`,
+        `Neither blinks first! A ${CHOICE_NAME[playerChoice]} stalemate!`,
+      ]
+    };
+    const pool = comments[winner] || comments.draw;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+);
+
+const GameMaster = new Agent('GameMaster',
+  'Orchestrate game flow, validate moves, manage state transitions',
+  null
+);
+
+class RpsOrchestrator {
+  constructor() {
+    this.eventBus = new EventBus();
+    this.botStrategist = BotStrategist;
+    this.scoreAnalyst = ScoreAnalyst;
+    this.narrator = Narrator;
+    this.gameMaster = GameMaster;
+  }
+
+  setAgentActive(agentName) {
+    this.eventBus.emit('agent_activated', { agent: agentName });
+    const dotMap = { 'GameMaster': 'dot-gm', 'BotStrategist': 'dot-bs', 'ScoreAnalyst': 'dot-sa', 'Narrator': 'dot-nr' };
+    document.querySelectorAll('.swarm-agent-dot').forEach(d => d.classList.remove('active', 'done'));
+    const dotId = dotMap[agentName];
+    if (dotId) { const dot = document.getElementById(dotId); if (dot) dot.classList.add('active'); }
+  }
+
+  setAgentDone(agentName) {
+    const dotMap = { 'GameMaster': 'dot-gm', 'BotStrategist': 'dot-bs', 'ScoreAnalyst': 'dot-sa', 'Narrator': 'dot-nr' };
+    const dotId = dotMap[agentName];
+    if (dotId) { const dot = document.getElementById(dotId); if (dot) { dot.classList.remove('active'); dot.classList.add('done'); } }
+  }
+
+  setSwarmText(html) {
+    const el = document.getElementById('swarmText');
+    if (el) {
+      el.innerHTML = html;
+      el.classList.remove('animate');
+      void el.offsetWidth;
+      el.classList.add('animate');
+    }
+  }
+
+  async resolveRound(playerChoice, gameState) {
+    this.setAgentActive('BotStrategist');
+    this.setSwarmText(`🧠 <span class="highlight">BotStrategist</span> analyzing your patterns...`);
+    await sleep(400);
+
+    const { choice: botChoice, strategy } = this.botStrategist.execute(gameState.playerHistory);
+    this.setAgentDone('BotStrategist');
+
+    let winner;
+    if (playerChoice === botChoice) winner = 'draw';
+    else if (CHOICE_BEATS[playerChoice] === botChoice) winner = 'player';
+    else winner = 'bot';
+
+    this.setAgentActive('GameMaster');
+    this.setSwarmText(`🎮 <span class="highlight">GameMaster</span> resolving round ${gameState.currentRound + 1}...`);
+    await sleep(300);
+    this.setAgentDone('GameMaster');
+
+    this.setAgentActive('ScoreAnalyst');
+    const newState = { ...gameState };
+    newState.playerScore += (winner === 'player' ? 1 : 0);
+    newState.botScore += (winner === 'bot' ? 1 : 0);
+    newState.wins += (winner === 'player' ? 1 : 0);
+    newState.losses += (winner === 'bot' ? 1 : 0);
+    newState.draws += (winner === 'draw' ? 1 : 0);
+    newState.rounds = [...(gameState.rounds || []), { playerChoice, botChoice, winner }];
+    newState.playerHistory = [...(gameState.playerHistory || []), playerChoice];
+
+    const stats = this.scoreAnalyst.execute(newState);
+    this.setSwarmText(`📊 <span class="highlight">ScoreAnalyst</span>: ${stats.prediction}`);
+    await sleep(300);
+    this.setAgentDone('ScoreAnalyst');
+
+    this.setAgentActive('Narrator');
+    const strategyNames = { random: '🎲 Random', counter: '🔄 Counter', pattern: '📊 Pattern Analysis', adaptive: '🧠 Adaptive' };
+    const comment = this.narrator.execute(winner, playerChoice, botChoice, strategyNames[strategy] || strategy);
+    this.setSwarmText(`📖 <span class="highlight">Narrator</span>: ${comment}`);
+    await sleep(400);
+    this.setAgentDone('Narrator');
+
+    return { botChoice, strategy, strategyName: strategyNames[strategy] || strategy, winner, stats, newState, comment };
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  GAME STATE
+// ════════════════════════════════════════════════════════════════
+
+const state = {
+  bestOf: 5,
+  rounds: [],
+  currentRound: 0,
+  playerScore: 0,
+  botScore: 0,
+  wins: 0,
+  losses: 0,
+  draws: 0,
+  maxRounds: 0,
+  playerChoice: null,
+  botChoice: null,
+  isPlaying: false,
+  isLocked: false,
+  playerHistory: [],
+  roundStrategies: [],
+};
+
+const orchestrator = new RpsOrchestrator();
+
+const $ = id => document.getElementById(id);
+const el = {
+  homeScreen: $('homeScreen'),
+  appContainer: $('appContainer'),
+  modeScreen: $('modeScreen'),
+  gameScreen: $('gameScreen'),
+  resultsScreen: $('resultsScreen'),
+  roundLabel: $('roundLabel'),
+  roundDots: $('roundDots'),
+  playerScore: $('playerScore'),
+  botScore: $('botScore'),
+  statusText: $('statusText'),
+  playerChoiceDisplay: $('playerChoiceDisplay'),
+  playerChoiceEmoji: $('playerChoiceEmoji'),
+  botChoiceDisplay: $('botChoiceDisplay'),
+  botChoiceEmoji: $('botChoiceEmoji'),
+  vsBadge: $('vsBadge'),
+  battleArea: $('battleArea'),
+  countdownOverlay: $('countdownOverlay'),
+  strategyText: $('strategyText'),
+  nextBtn: $('nextBtn'),
+  swarmText: $('swarmText'),
+  resultsIcon: $('resultsIcon'),
+  resultsTitle: $('resultsTitle'),
+  resultsSub: $('resultsSub'),
+  rWins: $('rWins'),
+  rLosses: $('rLosses'),
+  rDraws: $('rDraws'),
+  resultsSummaryText: $('resultsSummaryText'),
+  confettiContainer: $('confettiContainer'),
+  bestofOptions: $('bestofOptions'),
+  bgEffects: $('bgEffects'),
+  bgStars: $('bgStars'),
+};
+
+// ── Stars Background ───────────────────────────────────────────
+(function createStars() {
+  const container = $('bgStars');
+  for (let i = 0; i < 50; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.animationDelay = Math.random() * 3 + 's';
+    star.style.width = star.style.height = (1 + Math.random() * 2) + 'px';
+    container.appendChild(star);
+  }
+})();
+
+// ════════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════════
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function switchScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+function getWinner(p, b) {
+  if (p === b) return 'draw';
+  if ((p === 'rock' && b === 'scissors') ||
+      (p === 'paper' && b === 'rock') ||
+      (p === 'scissors' && b === 'paper')) return 'player';
+  return 'bot';
+}
+
+// ════════════════════════════════════════════════════════════════
+//  FLOW: Home → Mode Select → Game → Results
+// ════════════════════════════════════════════════════════════════
+
+function showModeScreen() {
+  // Hide home, show app with background effects (click sound handled by ripple)
+  el.homeScreen.classList.add('hidden');
+  el.bgEffects.classList.add('visible');
+  el.bgStars.classList.add('visible');
+  el.appContainer.classList.remove('hidden');
+  // Delay mode screen switch slightly to let bg fade in
+  setTimeout(() => switchScreen('modeScreen'), 200);
+}
+
+// Mode: Best Of Selector
+el.bestofOptions.addEventListener('click', (e) => {
+  const btn = e.target.closest('.bestof-opt');
+  if (!btn) return;
+  audio.click();
+  document.querySelectorAll('.bestof-opt').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.bestOf = parseInt(btn.dataset.value);
+});
+
+// Mode: Enter Arena
+function enterArena() {
+  // Click sound handled by ripple handler
+  startGame();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  GAME START
+// ════════════════════════════════════════════════════════════════
+
+function startGame() {
+  state.maxRounds = state.bestOf;
+  state.currentRound = 0;
+  state.rounds = [];
+  state.playerScore = 0;
+  state.botScore = 0;
+  state.wins = 0;
+  state.losses = 0;
+  state.draws = 0;
+  state.isLocked = false;
+  state.playerHistory = [];
+  state.roundStrategies = [];
+  state.isPlaying = true;
+
+  switchScreen('gameScreen');
+  buildRoundDots();
+  updateScore();
+  updateRoundLabel();
+  resetBattleArea();
+  enableChoices(true);
+  setStatus('Choose your move');
+  el.nextBtn.classList.remove('show');
+  el.strategyText.classList.remove('show');
+
+  document.querySelectorAll('.swarm-agent-dot').forEach(d => d.classList.remove('active', 'done'));
+  orchestrator.setSwarmText(`🎮 <span class="highlight">GameMaster</span> is ready. Waiting for your move...`);
+
+  audio.click();
+
+  animateSwarmAgents();
+}
+
+async function animateSwarmAgents() {
+  const agents = [
+    { id: 'dot-gm', name: 'GameMaster' },
+    { id: 'dot-bs', name: 'BotStrategist' },
+    { id: 'dot-sa', name: 'ScoreAnalyst' },
+    { id: 'dot-nr', name: 'Narrator' },
+  ];
+
+  for (const a of agents) {
+    const dot = $(a.id);
+    if (dot) {
+      dot.classList.add('active');
+      audio.swarmActivate(a.name);
+      await sleep(250);
+      dot.classList.remove('active');
+      dot.classList.add('done');
+    }
+  }
+  audio.click();
+  audio.click();
+  await sleep(100);
+  document.querySelectorAll('.swarm-agent-dot').forEach(d => d.classList.remove('active', 'done'));
+}
+
+function buildRoundDots() {
+  el.roundDots.innerHTML = '';
+  for (let i = 0; i < state.maxRounds; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'round-dot' + (i === 0 ? ' current' : '');
+    dot.dataset.index = i;
+    el.roundDots.appendChild(dot);
+  }
+}
+
+function updateRoundLabel() {
+  el.roundLabel.textContent = `Round ${state.currentRound + 1} of ${state.maxRounds}`;
+}
+
+function updateScore() {
+  el.playerScore.textContent = state.playerScore;
+  el.botScore.textContent = state.botScore;
+}
+
+function updateRoundDot(index, result) {
+  const dots = el.roundDots.querySelectorAll('.round-dot');
+  dots.forEach(d => d.classList.remove('current'));
+  if (index < dots.length) {
+    dots[index].classList.add(result);
+    if (index + 1 < dots.length) dots[index + 1].classList.add('current');
+  }
+}
+
+function resetBattleArea() {
+  el.playerChoiceEmoji.textContent = '❔';
+  el.botChoiceEmoji.textContent = '🗿';
+  el.playerChoiceDisplay.className = 'choice-display';
+  el.botChoiceDisplay.className = 'choice-display';
+  el.battleArea.classList.remove('revealing');
+  el.countdownOverlay.classList.remove('show', 'shoot');
+  el.strategyText.classList.remove('show');
+  el.strategyText.textContent = '';
+}
+
+function enableChoices(enabled) {
+  document.querySelectorAll('.btn-choice').forEach(b => b.disabled = !enabled);
+  state.isLocked = !enabled;
+}
+
+function setStatus(text, cls = '') {
+  el.statusText.textContent = text;
+  el.statusText.className = 'status-text' + (cls ? ' ' + cls : '');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  PLAYER CHOICE + SWARM PIPELINE
+// ════════════════════════════════════════════════════════════════
+
+async function playerChoice(choice) {
+  if (state.isLocked || !state.isPlaying) return;
+  state.playerChoice = choice;
+  enableChoices(false);
+  el.nextBtn.classList.remove('show');
+
+  el.playerChoiceEmoji.textContent = CHOICE_EMOJI[choice];
+  el.battleArea.classList.add('revealing');
+  setStatus('');
+
+  const overlay = el.countdownOverlay;
+  const phrases = ['Rock…', 'Paper…', 'Scissors…', 'SHOOT!'];
+  const timings = [500, 1000, 1500, 2000];
+  const revealTime = 2100;
+
+  el.botChoiceDisplay.classList.add('shaking');
+  el.playerChoiceDisplay.classList.add('shaking');
+
+  audio.click();
+
+  phrases.forEach((phrase, i) => {
+    setTimeout(() => {
+      overlay.textContent = phrase;
+      overlay.className = 'countdown-overlay show';
+      if (i === 3) {
+        overlay.classList.add('shoot');
+        audio.shoot();
+      } else {
+        audio.countdown(i);
+      }
+    }, timings[i]);
+  });
+
+  const swarmResult = orchestrator.resolveRound(choice, { ...state });
+
+  setTimeout(async () => {
+    overlay.classList.remove('show', 'shoot');
+    el.botChoiceDisplay.classList.remove('shaking');
+    el.playerChoiceDisplay.classList.remove('shaking');
+
+    const result = await swarmResult;
+    revealResult(result);
+  }, revealTime);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  REVEAL RESULT
+// ════════════════════════════════════════════════════════════════
+
+function revealResult(result) {
+  const { botChoice, strategy, strategyName, winner, stats, newState, comment } = result;
+
+  el.botChoiceEmoji.textContent = CHOICE_EMOJI[botChoice];
+  el.battleArea.classList.remove('revealing');
+
+  audio.swarmActivate('Narrator');
+
+  state.currentRound++;
+  state.botChoice = botChoice;
+
+  const pBox = el.playerChoiceDisplay;
+  const bBox = el.botChoiceDisplay;
+
+  const resultClasses = { player: 'win', bot: 'lose', draw: 'draw' };
+  const statusTexts = {
+    player: `${CHOICE_NAME[state.playerChoice]} beats ${CHOICE_NAME[botChoice]} — You win!`,
+    bot: `${CHOICE_NAME[botChoice]} beats ${CHOICE_NAME[state.playerChoice]} — Bot wins!`,
+    draw: `Both chose ${CHOICE_NAME[state.playerChoice]} — Draw!`,
+  };
+  const statusClasses = { player: 'win-text', bot: 'lose-text', draw: 'draw-text' };
+
+  pBox.className = `choice-display ${resultClasses[winner]}`;
+  bBox.className = `choice-display ${winner === 'draw' ? 'draw' : (winner === 'player' ? 'lose' : 'win')}`;
+  setStatus(statusTexts[winner], statusClasses[winner]);
+
+  if (winner === 'player') audio.roundWin();
+  else if (winner === 'bot') audio.roundLose();
+  else audio.roundDraw();
+
+  el.strategyText.textContent = `🤖 Bot used: ${strategyName}`;
+  el.strategyText.classList.add('show');
+
+  Object.assign(state, {
+    playerScore: newState.playerScore,
+    botScore: newState.botScore,
+    wins: newState.wins,
+    losses: newState.losses,
+    draws: newState.draws,
+    playerHistory: newState.playerHistory,
+  });
+  state.rounds.push({ playerChoice: state.playerChoice, botChoice, winner });
+  state.roundStrategies.push(strategy);
+
+  updateScore();
+  updateRoundDot(state.currentRound - 1, resultClasses[winner]);
+
+  const half = Math.ceil(state.maxRounds / 2);
+  const gameOver = state.playerScore >= half || state.botScore >= half || state.currentRound >= state.maxRounds;
+
+  if (gameOver) {
+    state.isPlaying = false;
+    setTimeout(showResults, 1200);
+  } else {
+    setTimeout(() => {
+      el.nextBtn.classList.add('show');
+      audio.nextRound();
+      el.nextBtn.focus();
+    }, 800);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  NEXT ROUND
+// ════════════════════════════════════════════════════════════════
+
+function nextRound() {
+  el.nextBtn.classList.remove('show');
+  resetBattleArea();
+  updateRoundLabel();
+  enableChoices(true);
+  setStatus('Choose your move');
+  orchestrator.setSwarmText(`🎮 <span class="highlight">GameMaster</span> ready. Round ${state.currentRound + 1} awaits...`);
+  document.querySelectorAll('.btn-choice')[0].focus();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SHOW RESULTS
+// ════════════════════════════════════════════════════════════════
+
+function showResults() {
+  switchScreen('resultsScreen');
+
+  const won = state.playerScore > state.botScore;
+  const isDraw = state.playerScore === state.botScore;
+
+  if (won) {
+    el.resultsIcon.textContent = '🏆';
+    el.resultsTitle.textContent = 'Victory!';
+    el.resultsTitle.className = 'results-title win';
+    el.resultsSub.textContent = `Final score: ${state.playerScore} - ${state.botScore}`;
+    audio.gameOverWin();
+    spawnConfetti();
+  } else if (isDraw) {
+    el.resultsIcon.textContent = '🤝';
+    el.resultsTitle.textContent = "It's a Tie!";
+    el.resultsTitle.className = 'results-title draw-title';
+    el.resultsSub.textContent = `Final score: ${state.playerScore} - ${state.botScore}`;
+    audio.roundDraw();
+  } else {
+    el.resultsIcon.textContent = '😔';
+    el.resultsTitle.textContent = 'Defeat';
+    el.resultsTitle.className = 'results-title lose';
+    el.resultsSub.textContent = `Final score: ${state.playerScore} - ${state.botScore}`;
+    audio.gameOverLose();
+  }
+
+  el.rWins.textContent = state.wins;
+  el.rLosses.textContent = state.losses;
+  el.rDraws.textContent = state.draws;
+
+  const total = state.rounds.length;
+  const winRate = total > 0 ? Math.round((state.wins / total) * 100) : 0;
+  const summary = [
+    `📊 Match Summary (Best of ${state.maxRounds})`,
+    ``,
+    `   Score:   You ${state.playerScore}  —  ${state.botScore} Bot`,
+    `   Rounds:  ${total} played`,
+    `   Win Rate:  ${winRate}%  (${state.wins}W / ${state.losses}L / ${state.draws}D)`,
+    ``,
+    `🤖 Bot Strategies Used:`,
+    ...countStrategies().map(s => `   • ${s.emoji} ${s.name}: ${s.count}x`),
+    ``,
+    `🧠 Swarm Agents Activated:`,
+    `   ✓ BotStrategist — Pattern analysis & counter-move selection`,
+    `   ✓ GameMaster — Round validation & state management`,
+    `   ✓ ScoreAnalyst — Real-time statistics & predictions`,
+    `   ✓ Narrator — Thematic commentary & flavor text`,
+  ].join('\n');
+
+  el.resultsSummaryText.textContent = summary;
+}
+
+function countStrategies() {
+  const strategyNames = {
+    random: { name: 'Random Guess', emoji: '🎲' },
+    counter: { name: 'Counter Move', emoji: '🔄' },
+    pattern: { name: 'Pattern Recognition', emoji: '📊' },
+    adaptive: { name: 'Adaptive Strategy', emoji: '🧠' },
+  };
+  const counts = {};
+  (state.roundStrategies || []).forEach(s => { counts[s] = (counts[s] || 0) + 1; });
+  if (Object.keys(counts).length === 0) {
+    return [{ name: 'Tracking...', emoji: '🔄', count: state.rounds.length }];
+  }
+  return Object.entries(counts).map(([key, count]) => ({
+    ...(strategyNames[key] || { name: key, emoji: '🤖' }),
+    count,
+  })).sort((a, b) => b.count - a.count);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CONFETTI
+// ════════════════════════════════════════════════════════════════
+
+function spawnConfetti() {
+  const container = el.confettiContainer;
+  container.innerHTML = '';
+  const colors = ['#6c3bff', '#00c48c', '#ff6b6b', '#ffb800', '#4a9eff', '#ff9ff3', '#9d7aff'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const size = 5 + Math.random() * 8;
+    const left = Math.random() * 100;
+    const duration = 2 + Math.random() * 2;
+    const delay = Math.random() * 1.5;
+    piece.style.width = size + 'px';
+    piece.style.height = size * (0.5 + Math.random()) + 'px';
+    piece.style.background = color;
+    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    piece.style.left = left + '%';
+    piece.style.animationDuration = duration + 's';
+    piece.style.animationDelay = delay + 's';
+    container.appendChild(piece);
+  }
+  audio.confetti();
+  setTimeout(() => audio.confetti(), 400);
+  setTimeout(() => container.innerHTML = '', 6000);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  REMATCH / GO HOME
+// ════════════════════════════════════════════════════════════════
+
+function rematch() {
+  el.confettiContainer.innerHTML = '';
+  switchScreen('gameScreen');
+  startGame();
+}
+
+function goHome() {
+  el.confettiContainer.innerHTML = '';
+  state.isPlaying = false;
+  // Hide background effects and app, show home
+  el.bgEffects.classList.remove('visible');
+  el.bgStars.classList.remove('visible');
+  el.appContainer.classList.add('hidden');
+  el.homeScreen.classList.remove('hidden');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  KEYBOARD SHORTCUTS
+// ════════════════════════════════════════════════════════════════
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  const gameActive = el.gameScreen.classList.contains('active');
+  const resultsActive = el.resultsScreen.classList.contains('active');
+  const homeActive = !el.homeScreen.classList.contains('hidden');
+  const modeActive = el.modeScreen.classList.contains('active');
+
+  if (gameActive && !state.isLocked && state.isPlaying) {
+    if (e.key === '1') { e.preventDefault(); playerChoice('rock'); }
+    else if (e.key === '2') { e.preventDefault(); playerChoice('paper'); }
+    else if (e.key === '3') { e.preventDefault(); playerChoice('scissors'); }
+  }
+
+  if (gameActive && el.nextBtn.classList.contains('show')) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      nextRound();
+    }
+  }
+
+  if (resultsActive) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      rematch();
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      goHome();
+    }
+  }
+
+  if (homeActive && e.key === 'Enter') {
+    e.preventDefault();
+    // Check if home screen is still visible
+    if (!el.homeScreen.classList.contains('hidden')) {
+      showModeScreen();
+    }
+  }
+
+  if (modeActive && e.key === 'Enter') {
+    e.preventDefault();
+    enterArena();
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+//  BUTTON RIPPLE EFFECT
+// ════════════════════════════════════════════════════════════════
+document.querySelectorAll('.btn-home-play, .btn-battle, .btn-rematch, .btn-home, .btn-next').forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    audio.click();
+    const rect = this.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    const size = Math.max(rect.width, rect.height);
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+    ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+    this.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  });
+});
+
+// Choice buttons: ripple only (click sound handled by playerChoice)
+document.querySelectorAll('.btn-choice').forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    const rect = this.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    const size = Math.max(rect.width, rect.height);
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+    ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+    this.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════════
+
+console.log('🌀 Rock Paper Scissors — Swarm Arena loaded!');
+console.log('  Agents: GameMaster, BotStrategist, ScoreAnalyst, Narrator');
+console.log('  Press Enter to play | 1 (Rock) | 2 (Paper) | 3 (Scissors)');
+</script>
+</body>
+</html>

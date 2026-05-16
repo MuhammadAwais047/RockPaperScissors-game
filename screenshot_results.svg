@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 600" width="100%" height="100%">
+  <defs>
+    <linearGradient id="violetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6c3bff"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a0a3e"/>
+      <stop offset="100%" stop-color="#6c3bff"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#1a0a3e" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="420" height="600" fill="#ffffff"/>
+
+  <!-- Subtle background orbs -->
+  <circle cx="100" cy="100" r="200" fill="#6c3bff" opacity="0.03"/>
+  <circle cx="320" cy="500" r="180" fill="#b388ff" opacity="0.03"/>
+
+  <!-- Game card -->
+  <rect x="15" y="20" width="390" height="560" rx="24" fill="#fff" filter="url(#shadow)"/>
+  <rect x="15" y="20" width="390" height="560" rx="24" fill="none" stroke="#e8e6f0" stroke-width="1"/>
+
+  <!-- Violet top bar -->
+  <rect x="39" y="20" width="342" height="3" rx="1.5" fill="url(#violetGrad)"/>
+
+  <!-- Trophy icon with glow -->
+  <circle cx="210" cy="100" r="40" fill="rgba(0,196,140,0.06)" stroke="rgba(0,196,140,0.2)" stroke-width="2"/>
+  <text x="210" y="115" text-anchor="middle" font-size="44">🏆</text>
+
+  <!-- Title -->
+  <text x="210" y="165" text-anchor="middle" font-size="28" font-weight="800" fill="#00c48c" font-family="Segoe UI, sans-serif">Victory!</text>
+
+  <!-- Subtitle -->
+  <text x="210" y="195" text-anchor="middle" font-size="14" fill="#6b6b8d" font-family="Segoe UI, sans-serif">Final score: 3 - 1</text>
+
+  <!-- Stats boxes -->
+  <rect x="35" y="220" width="105" height="60" rx="10" fill="#f5f3ff" stroke="#e8e6f0" stroke-width="1"/>
+  <text x="87" y="252" text-anchor="middle" font-size="22" font-weight="700" fill="#00c48c" font-family="Segoe UI, sans-serif">3</text>
+  <text x="87" y="268" text-anchor="middle" font-size="8" font-weight="600" fill="#9a9ab0" font-family="Segoe UI, sans-serif" letter-spacing="1">WINS</text>
+
+  <rect x="157" y="220" width="105" height="60" rx="10" fill="#f5f3ff" stroke="#e8e6f0" stroke-width="1"/>
+  <text x="209" y="252" text-anchor="middle" font-size="22" font-weight="700" fill="#ff6b6b" font-family="Segoe UI, sans-serif">1</text>
+  <text x="209" y="268" text-anchor="middle" font-size="8" font-weight="600" fill="#9a9ab0" font-family="Segoe UI, sans-serif" letter-spacing="1">LOSSES</text>
+
+  <rect x="279" y="220" width="105" height="60" rx="10" fill="#f5f3ff" stroke="#e8e6f0" stroke-width="1"/>
+  <text x="331" y="252" text-anchor="middle" font-size="22" font-weight="700" fill="#ffb800" font-family="Segoe UI, sans-serif">1</text>
+  <text x="331" y="268" text-anchor="middle" font-size="8" font-weight="600" fill="#9a9ab0" font-family="Segoe UI, sans-serif" letter-spacing="1">DRAWS</text>
+
+  <!-- ScoreAnalyst Report -->
+  <rect x="35" y="300" width="350" height="150" rx="10" fill="#f5f3ff" stroke="#e8e6f0" stroke-width="1"/>
+  <text x="50" y="322" text-anchor="start" font-size="9" font-weight="700" fill="#9a9ab0" font-family="Segoe UI, sans-serif" letter-spacing="1.5">📊 SCOREANALYST REPORT</text>
+  <text x="50" y="346" font-size="11" fill="#6b6b8d" font-family="Segoe UI, sans-serif" font-family="Segoe UI, sans-serif">📊 Match Summary (Best of 5)</text>
+  <text x="50" y="366" font-size="11" fill="#6b6b8d" font-family="Segoe UI, sans-serif">   Score:   You 3  —  1 Bot</text>
+  <text x="50" y="384" font-size="11" fill="#6b6b8d" font-family="Segoe UI, sans-serif">   Rounds:  5 played</text>
+  <text x="50" y="402" font-size="11" fill="#6b6b8d" font-family="Segoe UI, sans-serif">   Win Rate:  60%  (3W / 1L / 1D)</text>
+  <text x="50" y="425" font-size="11" fill="#6b6b8d" font-family="Segoe UI, sans-serif">🤖 Bot Strategies Used:</text>
+  <text x="65" y="443" font-size="10" fill="#9a9ab0" font-family="Segoe UI, sans-serif">• 🎲 Random Guess: 2x</text>
+  <text x="65" y="458" font-size="10" fill="#9a9ab0" font-family="Segoe UI, sans-serif">• 🧠 Adaptive Strategy: 2x</text>
+  <text x="65" y="473" font-size="10" fill="#9a9ab0" font-family="Segoe UI, sans-serif">• 🔄 Counter Move: 1x</text>
+
+  <!-- Swarm agents -->
+  <rect x="35" y="465" width="350" height="36" rx="10" fill="#f5f3ff" stroke="#e8e6f0" stroke-width="1"/>
+  <text x="50" y="488" font-size="10" fill="#6b6b8d" font-family="Segoe UI, sans-serif">🧠 Swarm Agents: GameMaster ✓  BotStrategist ✓  ScoreAnalyst ✓  Narrator ✓</text>
+
+  <!-- Buttons -->
+  <rect x="50" y="520" width="130" height="42" rx="10" fill="transparent" stroke="#e8e6f0" stroke-width="2"/>
+  <text x="115" y="547" text-anchor="middle" font-size="13" font-weight="600" fill="#6b6b8d" font-family="Segoe UI, sans-serif">← Home</text>
+
+  <rect x="200" y="520" width="175" height="42" rx="10" fill="url(#violetGrad)" filter="url(#shadow)"/>
+  <text x="287" y="547" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="Segoe UI, sans-serif">Play Again</text>
+
+  <!-- Sound toggle -->
+  <rect x="360" y="30" width="28" height="28" rx="14" fill="#f5f3ff" stroke="#e8e6f0" stroke-width="1.5"/>
+  <text x="374" y="50" text-anchor="middle" font-size="14" fill="#6b6b8d">🔊</text>
+
+  <!-- Confetti pieces -->
+  <circle cx="60" cy="80" r="4" fill="#6c3bff" opacity="0.6"/>
+  <rect x="340" y="60" width="6" height="10" rx="2" fill="#00c48c" opacity="0.5" transform="rotate(30 343 65)"/>
+  <rect x="50" y="150" width="5" height="8" rx="2" fill="#ff6b6b" opacity="0.4" transform="rotate(-20 52 154)"/>
+  <circle cx="370" cy="180" r="3" fill="#ffb800" opacity="0.5"/>
+  <rect x="100" y="50" width="5" height="7" rx="2" fill="#4a9eff" opacity="0.4" transform="rotate(45 102 53)"/>
+  <circle cx="350" cy="120" r="3.5" fill="#ff9ff3" opacity="0.4"/>
+  <rect x="130" y="170" width="4" height="6" rx="2" fill="#9d7aff" opacity="0.5" transform="rotate(-40 132 173)"/>
+</svg>

@@ -1,0 +1,15 @@
+node_modules/
+.DS_Store
+*.log
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+.venv/
+.agents/
+*.PDF
+*.pdf
+**/__pycache__/
+output.log
+server.log
+thumbs.db
