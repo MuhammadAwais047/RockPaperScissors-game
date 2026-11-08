@@ -13,3 +13,10 @@ __pycache__/
 output.log
 server.log
 thumbs.db
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key

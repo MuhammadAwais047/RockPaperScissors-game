@@ -138,7 +138,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _cors_headers(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
+        # No wildcard CORS: the UI is served same-origin by this process.
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
@@ -319,7 +319,7 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
 def main():
     port = 8000
-    server = ThreadedHTTPServer(("", port), Handler)
+    server = ThreadedHTTPServer(("127.0.0.1", port), Handler)
     html_exists = os.path.exists(RPS_HTML_PATH)
 
     print()
